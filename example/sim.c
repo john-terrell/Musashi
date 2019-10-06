@@ -46,12 +46,12 @@ void disassemble_program();
 /* Prototypes */
 void exit_error(char* fmt, ...);
 
-unsigned int cpu_read_byte(unsigned int address);
-unsigned int cpu_read_word(unsigned int address);
-unsigned int cpu_read_long(unsigned int address);
-void cpu_write_byte(unsigned int address, unsigned int value);
-void cpu_write_word(unsigned int address, unsigned int value);
-void cpu_write_long(unsigned int address, unsigned int value);
+unsigned int m68k_read_memory_8(unsigned int address);
+unsigned int m68k_read_memory_16(unsigned int address);
+unsigned int m68k_read_memory_32(unsigned int address);
+void m68k_write_memory_8(unsigned int address, unsigned int value);
+void m68k_write_memory_16(unsigned int address, unsigned int value);
+void m68k_write_memory_32(unsigned int address, unsigned int value);
 void cpu_pulse_reset(void);
 void cpu_set_fc(unsigned int fc);
 int cpu_irq_ack(int level);
@@ -121,7 +121,7 @@ void exit_error(char* fmt, ...)
 
 
 /* Read data from RAM, ROM, or a device */
-unsigned int cpu_read_byte(unsigned int address)
+unsigned int m68k_read_memory_8(unsigned int address)
 {
 	if(g_fc & 2)	/* Program */
 	{
@@ -145,7 +145,7 @@ unsigned int cpu_read_byte(unsigned int address)
 	return READ_BYTE(g_ram, address);
 }
 
-unsigned int cpu_read_word(unsigned int address)
+unsigned int m68k_read_memory_16(unsigned int address)
 {
 	if(g_fc & 2)	/* Program */
 	{
@@ -169,7 +169,7 @@ unsigned int cpu_read_word(unsigned int address)
 	return READ_WORD(g_ram, address);
 }
 
-unsigned int cpu_read_long(unsigned int address)
+unsigned int m68k_read_memory_32(unsigned int address)
 {
 	if(g_fc & 2)	/* Program */
 	{
@@ -193,15 +193,14 @@ unsigned int cpu_read_long(unsigned int address)
 	return READ_LONG(g_ram, address);
 }
 
-
-unsigned int cpu_read_word_dasm(unsigned int address)
+unsigned int m68k_read_disassembler_16(unsigned int address)
 {
 	if(address > MAX_ROM)
 		exit_error("Disassembler attempted to read word from ROM address %08x", address);
 	return READ_WORD(g_rom, address);
 }
 
-unsigned int cpu_read_long_dasm(unsigned int address)
+unsigned int m68k_read_disassembler_32(unsigned int address)
 {
 	if(address > MAX_ROM)
 		exit_error("Dasm attempted to read long from ROM address %08x", address);
@@ -210,7 +209,7 @@ unsigned int cpu_read_long_dasm(unsigned int address)
 
 
 /* Write data to RAM or a device */
-void cpu_write_byte(unsigned int address, unsigned int value)
+void m68k_write_memory_8(unsigned int address, unsigned int value)
 {
 	if(g_fc & 2)	/* Program */
 		exit_error("Attempted to write %02x to ROM address %08x", value&0xff, address);
@@ -232,7 +231,7 @@ void cpu_write_byte(unsigned int address, unsigned int value)
 	WRITE_BYTE(g_ram, address, value);
 }
 
-void cpu_write_word(unsigned int address, unsigned int value)
+void m68k_write_memory_16(unsigned int address, unsigned int value)
 {
 	if(g_fc & 2)	/* Program */
 		exit_error("Attempted to write %04x to ROM address %08x", value&0xffff, address);
@@ -254,7 +253,7 @@ void cpu_write_word(unsigned int address, unsigned int value)
 	WRITE_WORD(g_ram, address, value);
 }
 
-void cpu_write_long(unsigned int address, unsigned int value)
+void m68k_write_memory_32(unsigned int address, unsigned int value)
 {
 	if(g_fc & 2)	/* Program */
 		exit_error("Attempted to write %08x to ROM address %08x", value, address);
@@ -464,7 +463,7 @@ void make_hex(char* buff, unsigned int pc, unsigned int length)
 
 	for(;length>0;length -= 2)
 	{
-		sprintf(ptr, "%04x", cpu_read_word_dasm(pc));
+		sprintf(ptr, "%04x", m68k_read_disassembler_16(pc));
 		pc += 2;
 		ptr += 4;
 		if(length > 2)
@@ -479,7 +478,7 @@ void disassemble_program()
 	char buff[100];
 	char buff2[100];
 
-	pc = cpu_read_long_dasm(4);
+	pc = m68k_read_disassembler_32(4);
 
 	while(pc <= 0x16e)
 	{
